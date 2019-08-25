@@ -36,8 +36,29 @@
 .unit {
   height: 35px;
   width: 35px;
-  background-color:#D3D3D3;
-    text-align: center;
-    line-height: 35px;
-    border-radius:10px
+  background-color:white;
+  text-align: center;
+  line-height: 35px;
+  border-radius:10px;
+  margin: 2px;
+  color:black;
+  display: inline-block;
+  border: 1px solid black;
+}
+.unit:hover{
+  background-color:green;
+}
+.rowContainer{
+  /* display: flex; */
+}
+.catName{
+  margin: 5px;
+  line-height: 35px;
+  display: inline-block;
+}
+.customHeading{
+
+}
+.selectedSeats{
+  background-color:green;
 }
