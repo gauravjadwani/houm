@@ -1,131 +1,165 @@
 import React from 'react';
 import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
+
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle'
+import DialogTitle from '@material-ui/core/DialogTitle';
+import TextField from '@material-ui/core/TextField';
 // import { thisExpression } from '@babel/types';
 import J from './../seats.json';
+import { generateState, selectSeats } from './../Utilities/Utils';
 // import { thisExpression } from '@babel/types';
 
-
-export default class Clock extends React.Component<{}, 
-{
-  data: any[][];
-  open: boolean;
-  noOfSeats:Number;
-}> {
-  constructor(){
+export default class Clock extends React.Component<
+  {},
+  {
+    data: any;
+    open: boolean;
+    noOfSeats: number;
+  }
+> {
+  constructor() {
     super({});
-   this.state={
-     data:(Array(10).fill(0).map(x => Array(15).fill(0))),
-     open:false,
-     noOfSeats:5
-   } 
+    this.state = {
+      data: generateState(J),
+      noOfSeats: 5,
+      open: false,
+    };
   }
-  handleClick=()=>{
+  public handleGridClick = (
+    e: any,
+    row: number,
+    col: number,
+    categoryName: string,
+  ) => {
+    if(this.state.data[categoryName][row][col] === 2){
+      const tempState: any = { ...this.state.data };
+      tempState.categoryName[row][col] = 0;
+      let noOfSeats=this.state.noOfSeats;
+      // tempState.categoryName = status.stateGrid;
+      this.setState({ data: tempState, noOfSeats: --noOfSeats });
+    }
+    if(this.state.noOfSeats > 0){
+      const status: any = selectSeats(
+        this.state.data[categoryName],
+        this.state.noOfSeats,
+        row,
+        col,
+      );
+      const tempState: any = { ...this.state.data };
+      tempState.categoryName = status.stateGrid;
+      this.setState({ data: tempState, noOfSeats: status.noOfSeats });
+          console.log('STATUS', status);
+    }
 
-  }
-  handleDialogClose=()=>{
 
+  };
+  public handleSeatsCount=(e:any,noOfSeats:number)=>{
+    if(this.state.noOfSeats !== noOfSeats){
+      this.setState({noOfSeats});
+    }
   }
-  renderDialog=()=>{
-    return(
+  public handleDialogClose = () => {};
+  public handleDialogOpen = () => {
+    this.setState({open:true});
+  };
+  public renderDialog = () => {
+    return (
       <div>
-      <Button variant="outlined" color="primary" onClick={this.handleDialogClose}>
-        Open form dialog
-      </Button>
-      <Dialog open={this.state.open} onClose={this.handleDialogClose} aria-labelledby="form-dialog-title">
-        <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            To subscribe to this website, please enter your email address here. We will send updates
-            occasionally.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Email Address"
-            type="email"
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={this.handleDialogClose} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={this.handleDialogClose} color="primary">
-            Subscribe
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
-    )
-  }
-  buildSeats=(props:any)=>{
-    console.log('propspss',props);
-    return(
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={this.handleDialogOpen}
+        >
+          Open form dialog
+        </Button>
+        <Dialog
+          open={this.state.open}
+          onClose={this.handleDialogClose}
+          aria-labelledby="form-dialog-title"
+        >
+          <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              To subscribe to this website, please enter your email address
+              here. We will send updates occasionally.
+            </DialogContentText>
+              {
+                (new Array(10).fill(0)).map((i, k) => (
+                  <div className={(this.state.noOfSeats==(k+1))?("unit selectedSeats"):("unit")} key="1" onClick={(e)=>this.handleSeatsCount(e,k+1)}>{k+1}</div>
+                )
+                )
+              }
+
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleDialogClose} color="primary">
+              Submit
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  };
+  public buildSeats = (props: any) => {
+    console.log('propspss', props);
+    return (
       <div>
         <div className="customHeading">{props.data.categoryName}</div>
-        {
-          (new Array(props.data.row)).fill(0).map((indexrow,keyrow)=>(
-            (
-              <div className="row">
-            <div className="catName">{String.fromCharCode( props.data.startingRowIndex.charCodeAt(0) + keyrow )}</div>
-            {
-              (new Array(props.data.seats)).fill(0).map((index,key) => 
-                <div className="unit"data-value={String.fromCharCode( props.data.startingRowIndex.charCodeAt(0) + keyrow ) + (key+1)}
-                data-value1={keyrow.toString(10)+key.toString(10)} onClick={()=>this.handleClick()}>{key + 1}</div>
-              )
-            }
+        {new Array(props.data.row).fill(0).map((indexrow, keyrow) => (
+          // tslint:disable-next-line: jsx-key
+          <div className="row">
+            <div className="catName">
+              {String.fromCharCode(
+                props.data.startingRowIndex.charCodeAt(0) + keyrow,
+              )}
+            </div>
+            {new Array(props.data.seats).fill(0).map((_index, key) => (
+              <div
+                className={
+                  2 ==
+                  this.state.data[props.data.categoryName][
+                    parseInt(keyrow.toString(10), 10)
+                  ][parseInt(key.toString(10), 10)]
+                    ? 'unit selectedSeats'
+                    : 'unit'
+                }
+                data-value={keyrow.toString(10) + key.toString(10)}
+                data-category={props.data.categoryName}
+                data-row={keyrow}
+                data-col={key}
+                onClick={e =>
+                  this.handleGridClick(e, keyrow, key, props.data.categoryName)
+                }
+              >
+                {key + 1}
               </div>
-            )
-          ))
-        }
+            ))}
+          </div>
+        ))}
       </div>
-    )
-  }
-  singleUnit=(props:any)=>{
-    console.log('lolololol',J);
+    );
+  };
+  public singleUnit = (props: any) => {
+    console.log('lolololol', J);
     // props.value=1;
-  
-    return(
+
+    return (
       <div className="rowContainer">
-        {
-          J.map((key,index) =>
-          <this.buildSeats data={key}/>
-          )
-        }
+        {J.map((key, index) => (
+          <this.buildSeats data={key} key={0} />
+        ))}
       </div>
-    )
-  }
-  
+    );
+  };
 
-  render() {
-    return (<this.singleUnit/>);
+  public render() {
+    // console.log('render', this.state.data);
+    return (<div>
+      <this.singleUnit/>
+      <this.renderDialog/>
+      </div>);
   }
 }
-// (new Array(15)).fill(0).map((index,key) => 
-// <div className="unit">{key}</div>
-// )
-
-{/* <div className="rowContainer">
-<div className="customHeading">Club</div>
-{
-  (new Array(10)).fill(0).map((index1,key1) => 
-    (
-      <div className="row">
-    <div className="catName">{String.fromCharCode( 65 + key1 )}</div>
-    {
-      (new Array(15)).fill(0).map((index,key) => 
-        <div className="unit">{key}</div>
-      )
-    }
-      </div>
-    )
-  )
-}
-</div> */}
