@@ -18,6 +18,7 @@ export const selectSeats: any = (
   // 0=Available
   // 1=not available
   // 2=bookedSeats
+  //noOfseats to reaming setas
   let i: number = col;
   const bookedSeats: string[] = [];
   while (noOfSeats != 0 && i < stateGrid[row].length) {
@@ -33,3 +34,12 @@ export const selectSeats: any = (
   return { stateGrid, noOfSeats , bookedSeats};
 };
 // console.log(generateState(J));
+
+export const getPrice: any = (categoryName:string,J:any)=>{
+  for (let i: number = 0; i < J.length; i++) {
+    if(J[i]['categoryName'] === categoryName){
+      return J[i].price;
+    }
+  }
+  return null;
+}

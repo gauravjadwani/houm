@@ -9,7 +9,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import TextField from '@material-ui/core/TextField';
 // import { thisExpression } from '@babel/types';
 import J from './../seats.json';
-import { generateState, selectSeats } from './../Utilities/Utils';
+import { generateState, selectSeats, getPrice } from './../Utilities/Utils';
 // import { thisExpression } from '@babel/types';
 
 export default class Clock extends React.Component<
@@ -18,14 +18,16 @@ export default class Clock extends React.Component<
     data: any;
     open: boolean;
     noOfSeats: number;
+    amount:number;
   }
 > {
   constructor() {
     super({});
     this.state = {
       data: generateState(J),
-      noOfSeats: 5,
-      open: false,
+      noOfSeats: 0,
+      open: true,
+      amount:0
     };
   }
   public handleGridClick = (
@@ -34,14 +36,19 @@ export default class Clock extends React.Component<
     col: number,
     categoryName: string,
   ) => {
+    const price: number = getPrice(categoryName,J);
+    console.log('pppp',price);
     if(this.state.data[categoryName][row][col] === 2){
       const tempState: any = { ...this.state.data };
       tempState.categoryName[row][col] = 0;
       let noOfSeats=this.state.noOfSeats;
+      let amount=this.state.amount;
+      amount=amount-price;
       // tempState.categoryName = status.stateGrid;
-      this.setState({ data: tempState, noOfSeats: --noOfSeats });
+      this.setState({ data: tempState, noOfSeats: ++noOfSeats ,amount});
+      console.log('STATUSif', tempState);
     }
-    if(this.state.noOfSeats > 0){
+    else if(this.state.noOfSeats > 0){
       const status: any = selectSeats(
         this.state.data[categoryName],
         this.state.noOfSeats,
@@ -49,9 +56,12 @@ export default class Clock extends React.Component<
         col,
       );
       const tempState: any = { ...this.state.data };
+      const bookedSeats:number=status.bookedSeats.length;
+      const amount =bookedSeats * price;
+
       tempState.categoryName = status.stateGrid;
-      this.setState({ data: tempState, noOfSeats: status.noOfSeats });
-          console.log('STATUS', status);
+      this.setState({ data: tempState, noOfSeats: status.noOfSeats,amount });
+      // console.log('STATUS',(tempState[categoryName].price),amount);
     }
 
 
@@ -62,19 +72,12 @@ export default class Clock extends React.Component<
     }
   }
   public handleDialogClose = () => {};
-  public handleDialogOpen = () => {
-    this.setState({open:true});
+  public handleDialogState = (action:boolean) => {
+    this.setState({open:action});
   };
   public renderDialog = () => {
     return (
       <div>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={this.handleDialogOpen}
-        >
-          Open form dialog
-        </Button>
         <Dialog
           open={this.state.open}
           onClose={this.handleDialogClose}
@@ -95,7 +98,7 @@ export default class Clock extends React.Component<
 
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleDialogClose} color="primary">
+            <Button onClick={()=>this.handleDialogState(false)} color="primary">
               Submit
             </Button>
           </DialogActions>
@@ -107,7 +110,7 @@ export default class Clock extends React.Component<
     console.log('propspss', props);
     return (
       <div>
-        <div className="customHeading">{props.data.categoryName}</div>
+        <div className="customHeading">{props.data.categoryName + ' '+props.data.price}</div>
         {new Array(props.data.row).fill(0).map((indexrow, keyrow) => (
           // tslint:disable-next-line: jsx-key
           <div className="row">
@@ -157,9 +160,13 @@ export default class Clock extends React.Component<
 
   public render() {
     // console.log('render', this.state.data);
-    return (<div>
+    return (
+    <div>
+     
       <this.singleUnit/>
       <this.renderDialog/>
+      No of seats Remaining:{this.state.noOfSeats}
+      Total price :{this.state.amount}
       </div>);
   }
 }
