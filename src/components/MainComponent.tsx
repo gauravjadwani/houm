@@ -6,11 +6,8 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import TextField from '@material-ui/core/TextField';
-// import { thisExpression } from '@babel/types';
-import J from './../seats.json';
-import { generateState, selectSeats, getPrice } from './../Utilities/Utils';
-// import { thisExpression } from '@babel/types';
+import Dump from './../seats.json';
+import { generateState, selectSeats, getPrice, bookSeats} from './../Utilities/Utils';
 
 export default class Clock extends React.Component<
   {},
@@ -19,15 +16,19 @@ export default class Clock extends React.Component<
     open: boolean;
     noOfSeats: number;
     amount:number;
+    seatsList:any;
+    booked:boolean
   }
 > {
   constructor() {
     super({});
     this.state = {
-      data: generateState(J),
+      data: generateState(Dump),
       noOfSeats: 0,
       open: true,
-      amount:0
+      amount:0,
+      seatsList:[],
+      booked:false
     };
   }
   public handleGridClick = (
@@ -36,17 +37,16 @@ export default class Clock extends React.Component<
     col: number,
     categoryName: string,
   ) => {
-    const price: number = getPrice(categoryName,J);
-    console.log('pppp',price);
+    const price: number = getPrice(categoryName,Dump);
     if(this.state.data[categoryName][row][col] === 2){
       const tempState: any = { ...this.state.data };
-      tempState.categoryName[row][col] = 0;
+      tempState[categoryName][row][col] = 0;
       let noOfSeats=this.state.noOfSeats;
       let amount=this.state.amount;
       amount=amount-price;
-      // tempState.categoryName = status.stateGrid;
-      this.setState({ data: tempState, noOfSeats: ++noOfSeats ,amount});
-      console.log('STATUSif', tempState);
+      const seatsList=[...this.state.seatsList];
+      seatsList.pop();
+      this.setState({ data: tempState, noOfSeats: ++noOfSeats ,amount,seatsList});
     }
     else if(this.state.noOfSeats > 0){
       const status: any = selectSeats(
@@ -54,14 +54,14 @@ export default class Clock extends React.Component<
         this.state.noOfSeats,
         row,
         col,
+        categoryName,
+        Dump
       );
       const tempState: any = { ...this.state.data };
-      const bookedSeats:number=status.bookedSeats.length;
-      const amount =bookedSeats * price;
+      const amount =this.state.amount;
 
-      tempState.categoryName = status.stateGrid;
-      this.setState({ data: tempState, noOfSeats: status.noOfSeats,amount });
-      // console.log('STATUS',(tempState[categoryName].price),amount);
+      tempState[categoryName] = status.stateGrid;
+      this.setState({ data: tempState, noOfSeats: status.noOfSeats,amount:amount + status.amount });
     }
 
 
@@ -69,39 +69,54 @@ export default class Clock extends React.Component<
   public handleSeatsCount=(e:any,noOfSeats:number)=>{
     if(this.state.noOfSeats !== noOfSeats){
       this.setState({noOfSeats});
+      this.handleDialogState(false);
     }
   }
-  public handleDialogClose = () => {};
+  public handleSeatsBook = () => {
+    let tempState={...this.state.data}
+    let newState=bookSeats(tempState);
+    this.setState({data:newState,open:true,booked:true})
+  };
   public handleDialogState = (action:boolean) => {
     this.setState({open:action});
   };
+  public handleBookMore = ()=>{
+    this.setState({noOfSeats:0,amount:0,booked:false});
+    this.handleDialogState(true);
+  }
   public renderDialog = () => {
     return (
       <div>
         <Dialog
           open={this.state.open}
-          onClose={this.handleDialogClose}
+          onClose={()=>this.handleDialogState(false)}
           aria-labelledby="form-dialog-title"
         >
-          <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
+          <DialogTitle id="form-dialog-title"> {(this.state.booked)?('Confirmation'):('Select Seats')}</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              To subscribe to this website, please enter your email address
-              here. We will send updates occasionally.
+              {(this.state.booked)?('Congrats'):('kindly select the number of seats')}
             </DialogContentText>
               {
+              (this.state.booked)?(`Congratulation you have 
+              booked seats of worth ${this.state.amount}`):(
                 (new Array(10).fill(0)).map((i, k) => (
-                  <div className={(this.state.noOfSeats==(k+1))?("unit selectedSeats"):("unit")} key="1" onClick={(e)=>this.handleSeatsCount(e,k+1)}>{k+1}</div>
+                  <div className={(this.state.noOfSeats===(k+1))?("unit selectedSeats"):("unit")} key="1" onClick={(e)=>this.handleSeatsCount(e,k+1)}>{k+1}</div>
                 )
                 )
+              )
               }
 
           </DialogContent>
           <DialogActions>
-            <Button onClick={()=>this.handleDialogState(false)} color="primary">
-              Submit
-            </Button>
-          </DialogActions>
+          {
+            (this.state.booked === false)?(null):(
+              <Button onClick={this.handleBookMore} color="primary">
+                Book More
+              </Button>
+            )
+          }
+</DialogActions>
         </Dialog>
       </div>
     );
@@ -122,12 +137,17 @@ export default class Clock extends React.Component<
             {new Array(props.data.seats).fill(0).map((_index, key) => (
               <div
                 className={
-                  2 ==
+                  2 ===
                   this.state.data[props.data.categoryName][
                     parseInt(keyrow.toString(10), 10)
                   ][parseInt(key.toString(10), 10)]
                     ? 'unit selectedSeats'
-                    : 'unit'
+                    : ((
+                      1 ===
+                      this.state.data[props.data.categoryName][
+                        parseInt(keyrow.toString(10), 10)
+                      ][parseInt(key.toString(10), 10)]
+                    )?('unit bookedSeats'):('unit'))
                 }
                 data-value={keyrow.toString(10) + key.toString(10)}
                 data-category={props.data.categoryName}
@@ -146,12 +166,9 @@ export default class Clock extends React.Component<
     );
   };
   public singleUnit = (props: any) => {
-    console.log('lolololol', J);
-    // props.value=1;
-
     return (
       <div className="rowContainer">
-        {J.map((key, index) => (
+        {Dump.map((key, index) => (
           <this.buildSeats data={key} key={0} />
         ))}
       </div>
@@ -159,14 +176,17 @@ export default class Clock extends React.Component<
   };
 
   public render() {
-    // console.log('render', this.state.data);
     return (
     <div>
-     
       <this.singleUnit/>
       <this.renderDialog/>
-      No of seats Remaining:{this.state.noOfSeats}
-      Total price :{this.state.amount}
-      </div>);
+      <div>No of seats Remaining:{this.state.noOfSeats}</div>
+      <div>Total price :{this.state.amount}</div>
+      {
+        (this.state.noOfSeats === 0 && this.state.open === false)?(<button className="btn btn-primary" onClick={this.handleSeatsBook}>accept and book</button>):(null)
+      }
+     
+      </div>
+      );
   }
 }
